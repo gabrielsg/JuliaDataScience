@@ -42,8 +42,8 @@ Excel Package XLSX
 
 function write_xlsx(name, df::DataFrame) # helper function
    path = "$name.xlsx" 
-   data = collect(eachcol(df))
-   cols = names(df)
+   data = collect(eachcol(df)) # returns column data as vectors
+   cols = names(df) # return column names as vectors
    XLSX.writetable(path, data, cols)
 end
 
@@ -59,3 +59,12 @@ xf = XLSX.readxlsx(path)
 xf = XLSX.readxlsx(write_grades_xlsx())
 sheet = xf["Sheet1"]
 XLSX.eachtablerow(sheet) |> DataFrame
+
+# Indexing
+
+function names_grades1()
+    df = grades_2020()
+    df.name # return name as a vector 
+end
+
+names_grades1()

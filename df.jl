@@ -294,3 +294,31 @@ Y = 5:8
 df = DataFrame(; group, X, Y)
 gdf = groupby(df, :group)
 combine(gdf, [:X, :Y] .=> mean, renamecols=false)
+
+#= Performance using functions with !. These functions do not return a new DataFrame,
+but update the DataFrame they act upon 
+=#
+
+responses()
+select(responses(), :id, :q1)
+select!(responses(), :id, :q1)
+
+df = responses()
+@allocated select(df, :id, :q1) # how much memory is allocated
+@allocated select!(df, :id, :q1) # allocates less memory so should be faster
+
+#= Copying vs Not Copying columns
+There are two ways to access a DataFrame column. They differ in how they are
+accessed: one creates a “view” to the column without copying and the other
+creates a whole new column by copying the original column.
+The first way uses the regular dot . operator followed by the column name,
+like in df.col. This kind of access does not copy the column col. Instead df.col
+creates a “view” which is a link to the original column without performing any
+allocation. Additionally, the syntax df.col is the same as df[!, :col] with the
+bang ! as the row selector.
+The second way to access a DataFrame column is the df[:, :col] with the colon
+: as the row selector. This kind of access does copy the column col, so beware
+that it may produce unwanted allocations.
+Whenever possible, in the interest of performance, consider using compress=true
+in your categorical data.
+=#

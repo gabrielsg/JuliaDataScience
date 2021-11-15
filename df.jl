@@ -245,6 +245,52 @@ leftjoined = leftjoin(grades_2020(), grades_2021(); on=:name)
 pass(A, B) = [5.5 < a || 5.5 < b for (a, b) in zip(A, B)]
 transform(leftjoined, [:grade_2020, :grade_2021] => pass; renamecols=false)
 
+function only_pass()
+    leftjoined = leftjoin(grades_2020(), grades_2021(), on=:name)
+    pass(A, B) = [a > 5.5 || b > 5.5 for (a, b) in zip(A, B)]
+    leftjoined = transform(leftjoined, [:grade_2020, :grade_2021] => pass => :pass)
+    passed = subset(leftjoined, :pass; skipmissing=true)
+    return passed.name
+end
 
+only_pass()
 
+#=
+Groupby and Combine
+In the R programming language, Wickham (2011) has popularized the socalled
+split-apply-combine strategy for data transformations. In essence, this
+strategy splits a dataset into distinct groups, applies one or more functions to
+each group, and then combines the result. DataFrames.jl fully supports split-apply-combine
+=#
 
+function all_grades()
+    df1 = grades_2020()
+    df1 = select(df1, :name, :grade_2020 => :grade)
+    df2 = grades_2021()
+    df2 = select(df2, :name, :grade_2021 => :grade)
+    rename_bob2(data_col) = replace.(data_col, "Bob 2" => "Bob")
+    df2 = transform(df2, :name => rename_bob2 => :name)
+    return vcat(df1, df2)
+end
+
+all_grades()
+
+#=
+The strategy is to split the dataset into distinct students, apply the mean function
+to each student, and combine the result.
+The split is called groupby and we give as second argument the column ID that
+we want to split the dataset into:
+=#
+
+groupby(all_grades(), :name) #split by name
+gdf = groupby(all_grades(), :name) 
+using Statistics
+combine(gdf, :grade => mean) #combine results after apply mean function
+
+# Apply to multiple columns
+group = [:A, :A, :B, :B]
+X = 1:4
+Y = 5:8
+df = DataFrame(; group, X, Y)
+gdf = groupby(df, :group)
+combine(gdf, [:X, :Y] .=> mean, renamecols=false)
